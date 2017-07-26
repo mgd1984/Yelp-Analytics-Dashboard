@@ -15,7 +15,7 @@ These instructions allow you to replicate our dashboard on your own local machin
 * [RStudio]() - RStudio is an integrated development environment (IDE) for R. It includes a console, syntax-highlighting editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management.
 
 ### Sergeant
-* [Sergeant](https://hrbrmstr.github.io/sergeant/) - 'Apache Drill' is a low-latency distributed query engine designed to enable data exploration and 'analytics' on both relational and non-relational 'datastores', scaling to petabytes of data. The sergeant package provides methods that enable working R to work with 'Apache' 'Drill' instances via the 'REST' 'API', 'JDBC' interface (optional), 'DBI' 'methods' and using 'dplyr'/'dbplyr' idioms.
+* [Sergeant](https://hrbrmstr.github.io/sergeant/) - 'Apache Drill' is a low-latency distributed query engine designed to enable data exploration and 'analytics' on both relational and non-relational 'datastores', scaling to petabytes of data. The sergeant package provides methods that enable working R to work with Apache Drill instances via the 'REST' 'API', 'JDBC' interface (optional), 'DBI' 'methods' and using 'dplyr'/'dbplyr' idioms.
 
 
 ### Flexdashboards 
