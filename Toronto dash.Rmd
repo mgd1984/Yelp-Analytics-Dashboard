@@ -1,0 +1,621 @@
+---
+title: "Yelp Toronto"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+storyboard: true
+vertical_layout: fill 
+runtime: shiny
+
+
+---
+
+<style>                     
+.navbar {
+  background-color:#c41200;
+  border-color:black;
+}
+.navbar-brand {
+color:white!important;
+}
+.navbar-nav>li>a:hover {
+  background-color: #a20000 !important;
+}
+.navbar-nav>.active>a {
+  background-color: #a20000 !important;
+}
+
+</style> 
+
+```{r global, include=FALSE}
+
+library(sergeant)
+library(flexdashboard)
+library(DT)
+library(shiny)
+library(dplyr)
+library(leaflet)
+library(leaflet.extras)
+library(highcharter)
+library(stringr)
+library(data.table)
+library(sp)
+setwd("~/Downloads/yelp")
+load("yelp_data.Rdata")
+load("yelp_biz.Rdata")
+x <- "Toronto"
+yelp_city <- filter(yelp_biz_df, city == "Toronto" )
+
+```
+
+```{r}
+#-- parse_drilldown() -------------------------------------
+# Prepares the data into separate lists for top level columns
+# and drilldowns.
+# Parameters:
+#   data............Data frame
+#   toplevel........Column name to use for the toplevel categories
+#   drilldown.......Column name to use for the drilldown categories
+#   type............Type of chart for drilldown series
+#   summarise.......Column name to sum on for toplevel and drilldowns
+#   fn..............Function to aggregate the summarise variable by 
+#                   at the top level. 
+#   drilldownId.....Optional function to add an id to the drilldowns
+#   ... ............Parameters passed to the function fn
+# Returns:
+#   list with top level and drill down lists. 
+#----------------------------------------------------------
+parse_drilldown <- function(data, toplevel, drilldown, type, summarise, fn, drilldownId = '', ...){
+  data <- setDT(data)
+  
+  data <- setcolorder(data, c(toplevel, drilldown, summarise))
+  names(data) <- c("top", "drill", "what")
+  
+  top <- data[, .(what = fn(what, ...)), by = top]
+  top <- mapply(function(x, y, z){
+    list(
+      name = x,
+      y = as.numeric(y),
+      drilldown = str_replace_all(paste0(drilldownId, summarise, "_drill_", x), "\\s+", "_")
+    )
+  }, top$top, top$what, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  
+  drill <- data[, .(what = list(list(what = what, drill = drill))), by = top]
+  
+  drill <- mapply(function(x, y){
+    list(
+      type = type,
+      name = paste0(drilldownId, summarise, ' ', x),
+      id = str_replace_all(paste0(drilldownId, summarise, "_drill_", x), "\\s+", "_"),
+      data = mapply(function(x, y, z){
+        list(
+          name = x,
+          y = y
+        )
+      }, y[[2]], y[[1]], SIMPLIFY = FALSE, USE.NAMES = FALSE)
+    )
+  }, drill$top, drill$what, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  
+  return(list(top = top, drill = drill))
+}
+
+#-- pares_multi_series() ----------------------------------
+# Prepares the data into a list of data series for a multi-series
+# chart. 
+# Parametrs:
+#   data............Data containing the different series
+#   categories......Column name to use as the categories
+# Returns:
+#   list of data series.
+#----------------------------------------------------------
+parse_multi_series <- function(data, categories){
+  series <- lapply(data[, !c(categories), with=FALSE], function(y, x){
+    mapply(function(x, y){
+      list(
+        name = x,
+        y = y
+      )
+    }, x, y, SIMPLIFY = FALSE, USE.NAMES = FALSE)
+  }, data[[categories]])
+}
+```
+
+About Yelp 
+==================================
+
+<div style = "text align: center; width: 100% ">
+<center>![](http://albertnejat.com/site/wp-content/uploads/2015/03/yelp_banner2.jpg) </center>
+</div>
+
+<div style = "padding: 30px">
+**Our purpose**
+To connect people with great local businesses<br>
+
+**10 Facts About Yelp** <br>
+1. Yelp was founded in 2004 to help people find great local businesses like dentists, hair stylists and mechanics.<br>
+2. Yelp had a monthly average of 26 million unique visitors who visited Yelp via the Yelp app and 73 million unique visitors who visited Yelp via mobile web in Q1 2017.<br>
+3. Yelpers have written more than 127 million reviews by the end of Q1 2017<br>
+4. In addition to reviews, you can use Yelp to find events, lists and to talk with other Yelpers.<br>
+5. Every business owner (or manager) can setup a free account to post photos and message their customers.<br>
+6. Yelp makes money by selling ads to local businesses - you’ll see these clearly labeled "Yelp Ads" around the site.<br>
+7. Paying advertisers can never change or re-order their reviews.<br>
+8. Yelp uses automated software to recommend the most helpful and reliable reviews for the Yelp community among the millions we get. The software looks at dozens of different signals, including various measures of quality, reliability, and activity on Yelp. The process has nothing to do with whether a business advertises on Yelp or not.<br>
+9. You can access Yelp via iPhone, Android, and more - see the full list of mobile apps here.<br>
+10. The Local Yelp brings locals updates on the latest and greatest business openings & other happenings.
+</div>
+
+
+
+Map 
+===================================== 
+
+Row
+-----------------------------------------------------------------------
+
+### Average Number of Stars
+```{r}
+av_num_stars <- round(mean(yelp_city$stars),1) 
+
+valueBox(av_num_stars, 
+         icon = "fa-star",
+         color = "#e07070")
+```
+
+### Number of Places 
+
+```{r}
+num_restaurants <- nrow(yelp_city)
+
+valueBox(format(num_restaurants, big.mark = ","), 
+         icon = "ion-fork",
+         color = "#e07070")
+```
+
+### Numer of Yelp Reviews
+
+```{r}
+sum_of_reviews <- sum(yelp_city$review_count)
+
+valueBox(format(sum_of_reviews, big.mark = ","),
+         icon = "fa-yelp",
+         color = "#e07070")
+```
+
+Row 
+-----------------------------------------------------------------------
+### Map of Toronto
+
+```{r}
+leafletOutput('restaurant_map')
+
+output$restaurant_map <- renderLeaflet({
+  if (input$restaurants == 1){
+      selected_rank <- yelp_city
+      
+  } else if (input$restaurants == 2){
+    
+    selected_rank <-arrange(yelp_city, desc(review_count/stars)) %>%
+      head(10)
+    
+    
+  }  else {
+  
+  selected_rank <- arrange(yelp_city, desc(review_count/stars)) %>%
+    tail(10)
+  }
+  
+ 
+  leafIcons <- icons(
+  iconUrl = ifelse(yelp_city$stars > 3.5,
+    "https://image.flaticon.com/icons/png/128/160/160204.png",
+    "https://image.flaticon.com/icons/png/128/408/408727.png"
+  ),
+  iconWidth =35, iconHeight = 35,
+)
+  
+  standard_map_style <- "https://api.mapbox.com/styles/v1/mgd1984/cj4zsakdt0ztm2smwbnzr56a7/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdkMTk4NCIsImEiOiJjajMwNmlscHQwMDIyMnFvMzdrZ2tocWJpIn0.beIkvfwLITKLQDDbi1ZjGA"
+  
+    yelp_map <- leaflet(data = selected_rank) %>%
+      setView(lng =-79.4391695 , lat=43.7356082, zoom=11) %>% 
+      addTiles("https://api.mapbox.com/styles/v1/mgd1984/cj5hh4lzf462u2sob1kwsn2vv/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdkMTk4NCIsImEiOiJjajMwNmlscHQwMDIyMnFvMzdrZ2tocWJpIn0.beIkvfwLITKLQDDbi1ZjGA",group="Standard") %>% 
+      addProviderTiles(providers$CartoDB.DarkMatter,group="Dark") %>% 
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+      addProviderTiles(providers$Stamen.TonerLite, group = "Light") %>%
+      addMarkers(~longitude, ~latitude, popup = ~as.character(paste("Name:",name,"<br>", "Reviews:",review_count)),clusterOptions = markerClusterOptions(),icon = leafIcons) %>% 
+      addHeatmap(~longitude, ~latitude, intensity = NULL,blur = 40,group="Heatmap") %>%
+      addLayersControl(
+        baseGroups = c("Standard","Dark","Satellite","Light"),
+        overlayGroups = c("Heatmap"),
+        options = layersControlOptions(collapsed = F)) %>% 
+      hideGroup("Heatmap")
+
+})
+
+```
+
+
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+### Restaurants
+```{r}
+
+#Filter for Top 10 and Bottom 10 restaurants in TORONTO
+all_restaurants_and_stars <- yelp_city %>%
+  select(c(name, stars))
+
+rest_stars_desc <- arrange(all_restaurants_and_stars, desc(stars))
+
+#TOP
+top_10_restaurants <- rest_stars_desc %>%
+  head(10)
+
+top_10_restaurants <- top_10_restaurants %>%
+  select(name)
+
+
+
+#BOTTOM
+bottom_10_restaurants <- rest_stars_desc %>%
+  tail(10)
+
+bottom_10_restaurants <- bottom_10_restaurants %>%
+  select(name)
+
+
+
+
+inputPanel(
+ selectInput('restaurants', label = "Select Restaurants", choices=list(`All Restaurants` = 1, `Top 10 Restaurant` = 2, `Bottom 10 Restaurants` = 3))
+)
+
+```
+
+
+
+
+Popular Places
+=====================================     
+```{r}
+
+yelp_city <-  as.data.frame(yelp_city)
+Toronto_reviews1 <- yelp_city %>% select(neighborhood, name, review_count)
+Toronto_reviews1 <- as.data.frame(Toronto_reviews1)
+
+
+
+
+top_5 <- yelp_city %>%
+  filter(!is.na(neighborhood)) %>%
+  group_by(neighborhood) %>%
+  summarise(total = sum(review_count)) %>%
+  arrange(desc(total)) %>% 
+  head(5)
+
+
+
+ds <- filter(Toronto_reviews1, neighborhood %in% top_5$neighborhood)
+
+db <- ds %>% group_by(neighborhood) %>% arrange(desc(review_count), .by_group = T) %>% top_n(10)
+
+
+drilldown_toronto <- parse_drilldown(db,"neighborhood", "name", "column", "review_count", sum)
+
+Toronto_hc <- highchart() %>%
+  hc_series(
+    list(
+      type = "column",
+      colorByPoint = TRUE,
+      data = drilldown_toronto$top,
+      allowPointDrilldown = TRUE
+    )
+  ) %>%
+  hc_drilldown(
+    series = drilldown_toronto$drill
+  ) %>%
+  hc_xAxis(type = "category") %>%
+  hc_legend(enabled = FALSE) %>%
+  hc_colors(c("#d32323", "#f15c00", "#0073bb", "#41a700", "#f7f727"))
+
+Toronto_hc
+```
+
+Places and Stars {.storyboard}
+=====================================     
+### Toronto Breakfast/Brunch
+
+```{r}
+highchartOutput("TO_Breakfast")
+
+output$TO_Breakfast <- renderHighchart({
+  TO_Breakfast <- filter(yelp_biz, repeated_contains(categories,'Breakfast')) %>%
+    filter(review_count >= input$review_count[1] && review_count <= input$review_count[2]) %>%
+    arrange(desc(review_count))
+  
+  TO_BreakfastDF <- as.data.frame(TO_Breakfast)
+  
+  if(nrow(TO_BreakfastDF) == 0){
+    return(highchart())
+  }
+  
+  TO_BreakfastDF <- filter(TO_BreakfastDF, city == "Toronto")
+  
+  breakfastgraph <- hchart(TO_BreakfastDF, "scatter", hcaes(x = stars, y = review_count, group = name)) %>%
+    hc_legend(enabled = FALSE) 
+  
+  breakfastgraph
+})
+```
+
+
+### Toronto Desserts
+```{r}
+highchartOutput("TO_Dessert")
+
+output$TO_Dessert <- renderHighchart({
+  
+  TO_Dessert <- filter(yelp_biz, repeated_contains(categories,'Dessert')) %>%
+    filter(review_count >= input$review_count[1] && review_count <= input$review_count[2]) %>%
+    arrange(desc(review_count))
+  
+  TO_DessertDF <- as.data.frame(TO_Dessert)
+  
+  if(nrow(TO_DessertDF) == 0){
+    return(highchart())
+  }
+  
+  TO_DessertDF <- filter(TO_DessertDF, city == "Toronto")
+  
+  dessertgraph <- hchart(TO_DessertDF, "scatter", hcaes(x = stars, y = review_count, group = name)) %>%
+    hc_legend(enabled = FALSE) 
+  
+  dessertgraph
+  
+})
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+Star and Review Counts for a variety of different local businesses.
+
+```{r}
+
+sliderInput('review_count', label = "Limit Review Count", min = 0, max = 1000, value = c(0, 1000))
+
+# sliderInput('stars', "bw_adjust", label = "How Many Stars:",
+#             min = 0, max = 5, value = 2.5, step = 0.5)
+```
+
+Bar Graphs Top 10 {.storyboard}
+===================================== 
+
+### Breakfast/Brunch
+
+```{r}
+TO_Breakfastgraph <- filter(yelp_biz, repeated_contains(categories,'Breakfast')) %>%
+  arrange(desc(review_count))
+
+TO_BreakfastgraphDF <- as.data.frame(TO_Breakfastgraph)
+
+
+TO_BreakfastgraphDF <- filter(TO_BreakfastgraphDF, city == "Toronto") %>%
+  head(10)
+
+TOBreakfast_is_SICK <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Breakfast YUM") %>% 
+  hc_xAxis(categories = TO_BreakfastgraphDF$name) %>% 
+  hc_add_series(data = TO_BreakfastgraphDF$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TOBreakfast_is_SICK
+```
+
+
+
+### Breakfast/Brunch Weighted Reviews
+```{r}
+weightreviews_breakbrunch <- yelp_biz %>%
+  filter(repeated_contains(categories,'Brunch')) %>%
+  mutate(weighted_reviews = review_count / stars) %>%
+  arrange(desc(weighted_reviews))
+
+weightreviews_breakbrunch <- as.data.frame(weightreviews_breakbrunch)
+
+weightreviews_breakbrunch <- filter(weightreviews_breakbrunch, city == "Toronto") %>%
+  head(10)
+
+weightreviews_breakbrunch <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Weighted Reviews for Breakfast/Brunch Restaurants") %>% 
+  hc_xAxis(categories = weightreviews_breakbrunch$name, step = 0.75) %>% 
+  hc_add_series(data = weightreviews_breakbrunch$weighted_reviews,
+                colorByPoint = TRUE,
+                name = "weighted reviews")
+
+weightreviews_breakbrunch
+
+```
+
+
+### Dessert
+
+```{r}
+TO_Dessertgraph <- filter(yelp_biz, repeated_contains(categories,'Dessert')) %>%
+  arrange(desc(review_count)) 
+
+TO_DessertDF <- as.data.frame(TO_Dessertgraph)
+
+TO_DessertDF<- filter(TO_DessertDF, city == "Toronto") %>%
+  head(10)
+
+
+TO_DessertDF <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Dessert YUM") %>% 
+  hc_xAxis(categories = TO_DessertDF$name) %>% 
+  hc_add_series(data = TO_DessertDF$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TO_DessertDF
+```
+
+### Dessert Weighted Reviews
+```{r}
+weightreviews_dessert <- yelp_biz %>%
+  filter(repeated_contains(categories,'Dessert')) %>%
+  mutate(weighted_reviews = review_count / stars) %>%
+  arrange(desc(weighted_reviews))
+
+weightreviews_dessert <- as.data.frame(weightreviews_dessert)
+
+weightreviews_dessert <- filter(weightreviews_dessert, city == "Toronto") %>%
+  head(10)
+
+weightreviews_dessert <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Weighted Reviews for Breakfast/Brunch Restaurants") %>% 
+  hc_xAxis(categories = weightreviews_dessert$name) %>% 
+  hc_add_series(data = weightreviews_dessert$weighted_reviews,
+                colorByPoint = TRUE,
+                name = "weighted reviews")
+
+weightreviews_dessert
+```
+
+### Bars
+```{r}
+TO_Bargraph <- filter(yelp_biz, repeated_contains(categories,'Bars')) %>%
+  arrange(desc(review_count)) 
+
+TO_BarDF <- as.data.frame(TO_Bargraph)
+
+TO_BarDF <- filter(TO_BarDF, city == "Toronto") %>%
+  head(10)
+
+TO_BarDF <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Bars") %>% 
+  hc_xAxis(categories = TO_BarDF$name) %>% 
+  hc_add_series(data = TO_BarDF$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TO_BarDF
+```
+
+
+### Clubs
+```{r}
+TO_Clubgraph <- filter(yelp_biz, repeated_contains(categories,'Clubs')) %>%
+  arrange(desc(review_count)) 
+
+TO_Clubgraph <- as.data.frame(TO_Clubgraph)
+
+TO_Clubgraph <- filter(TO_Clubgraph, city == "Toronto") %>%
+  head(10)
+
+TO_Clubgraph <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Clubs") %>% 
+  hc_xAxis(categories = TO_Clubgraph$name) %>% 
+  hc_add_series(data = TO_Clubgraph$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TO_Clubgraph
+```
+
+
+### Shopping
+```{r}
+TO_Shoppinggraph <- filter(yelp_biz, repeated_contains(categories,'Shopping')) %>%
+  arrange(desc(review_count)) 
+
+TO_Shoppinggraph <- as.data.frame(TO_Shoppinggraph)
+
+TO_Shoppinggraph <- filter(TO_Shoppinggraph, city == "Toronto") %>%
+  head(10)
+
+TO_Shoppinggraph <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Shopping") %>% 
+  hc_xAxis(categories = TO_Shoppinggraph$name) %>% 
+  hc_add_series(data = TO_Shoppinggraph$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TO_Shoppinggraph
+```
+
+### Italian Restaurants
+```{r}
+TO_Italiangraph <- filter(yelp_biz, repeated_contains(categories,'Italian')) %>%
+  arrange(desc(review_count)) 
+
+TO_Italiangraph <- as.data.frame(TO_Italiangraph)
+
+TO_Italiangraph <- filter(TO_Italiangraph, city == "Toronto") %>%
+  head(10)
+
+TO_Italiangraph <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Toronto Italian Restaurants") %>% 
+  hc_xAxis(categories = TO_Italiangraph$name) %>% 
+  hc_add_series(data = TO_Italiangraph$review_count,
+                colorByPoint = TRUE,
+                name = "review count")
+
+TO_Italiangraph
+```
+
+### Weighted Reviews Italian
+```{r}
+weightreviews <- yelp_biz %>%
+  filter(repeated_contains(categories,'Italian')) %>%
+  mutate(weighted_reviews = review_count / stars) %>%
+  arrange(desc(weighted_reviews))
+
+weightreviews <- as.data.frame(weightreviews)
+
+weightreviews <- filter(weightreviews, city == "Toronto") %>%
+  head(10)
+
+weightreviews <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Weighted Reviews for Italian Restaurants") %>% 
+  hc_xAxis(categories = weightreviews$name) %>% 
+  hc_add_series(data = weightreviews$weighted_reviews,
+                colorByPoint = TRUE,
+                name = "weighted reviews")
+
+weightreviews
+
+```
+
+### Pizza Weighted Reviews
+```{r}
+weightreviews_pizza <- yelp_biz %>%
+  filter(repeated_contains(categories,'Pizza')) %>%
+  mutate(weighted_reviews = review_count / stars) %>%
+  arrange(desc(weighted_reviews))
+
+weightreviews_pizza <- as.data.frame(weightreviews_pizza)
+
+weightreviews_pizza <- filter(weightreviews_pizza, city == "Toronto") %>%
+  head(10)
+
+weightreviews_pizza <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_title(text = "Weighted Reviews for Italian Restaurants") %>% 
+  hc_xAxis(categories = weightreviews_pizza$name) %>% 
+  hc_add_series(data = weightreviews_pizza$weighted_reviews,
+                colorByPoint = TRUE,
+                name = "weighted reviews")
+
+weightreviews_pizza
+
+```
+
