@@ -9,23 +9,21 @@ These instructions allow you to replicate our dashboard on your own local machin
 
   Drill’s agility and flexibility are it's greatest strengths. Along with meeting the table stakes for SQL-on-Hadoop, which is to achieve low latency performance at scale, Drill allows users to analyze the data without any ETL or up-front schema definitions. The data can be in any file format such as text, JSON, or Parquet
 
-For instructions on installing & running Apache Drill in embedded mode please check see [this quick start guide](https://drill.apache.org/docs/drill-in-10-minutes/)
+  For instructions on installing & running Apache Drill in embedded mode please check see [this quick start guide](https://drill.apache.org/docs/drill-in-10-minutes/)
 
 ### R Studio
 * [RStudio]() - RStudio is an integrated development environment (IDE) for R. It includes a console, syntax-highlighting editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management.
 
 ### Sergeant
-* [Sergeant](https://hrbrmstr.github.io/sergeant/) - A package of tools with which to transform and query data with Apache Drill
+* [Sergeant](https://hrbrmstr.github.io/sergeant/) - 'Apache Drill' is a low-latency distributed query engine designed to enable data exploration and 'analytics' on both relational and non-relational 'datastores', scaling to petabytes of data. The sergeant package provides methods that enable working R to work with 'Apache' 'Drill' instances via the 'REST' 'API', 'JDBC' interface (optional), 'DBI' 'methods' and using 'dplyr'/'dbplyr' idioms.
 
 
 ```{r}
 devtools::install_github("hrbrmstr/sergeant")
 ```
 
-
 ### Flexdashboards 
 * [Flexdashboards](http://rmarkdown.rstudio.com/flexdashboard/) - Easy, interactive dashboards for R:
-
 
 
 ## Authors
