@@ -38,5 +38,9 @@ Install the flexdashboard package in from CRAN as follows:
 
 ## Acknowledgments
 
-* Hat tip to: 
+Hat tips to:
+* Bob Rudis (hrbmstr)
+* RNFC (Nico, Tim & Jon)
+* Apache Software Foundation 
+* All other open-source developers of packages & plug-ins for R
 
