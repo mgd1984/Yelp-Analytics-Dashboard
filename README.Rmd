@@ -1,6 +1,5 @@
-# Project Title
+# Yelp BizOps Analytics Dashboard 
 
-One Paragraph of project description goes here
 
 ## Getting Started
 
