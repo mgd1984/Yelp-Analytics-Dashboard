@@ -376,7 +376,7 @@ output$TO_Dessert <- renderHighchart({
 
 Column {.sidebar}
 -----------------------------------------------------------------------
-Stars and Review Count of whatever meal you want!!!
+Star and Review Counts for a variety of different local businesses.
 
 ```{r}
 
@@ -439,7 +439,7 @@ weightreviews_breakbrunch
 ```
 
 
-### Desserst
+### Dessert
 
 ```{r}
 TO_Dessertgraph <- filter(yelp_biz, repeated_contains(categories,'Dessert')) %>%
