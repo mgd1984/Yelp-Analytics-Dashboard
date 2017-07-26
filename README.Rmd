@@ -18,12 +18,17 @@ These instructions allow you to replicate our dashboard on your own local machin
 * [Sergeant](https://hrbrmstr.github.io/sergeant/) - 'Apache Drill' is a low-latency distributed query engine designed to enable data exploration and 'analytics' on both relational and non-relational 'datastores', scaling to petabytes of data. The sergeant package provides methods that enable working R to work with 'Apache' 'Drill' instances via the 'REST' 'API', 'JDBC' interface (optional), 'DBI' 'methods' and using 'dplyr'/'dbplyr' idioms.
 
 
-```{r}
-devtools::install_github("hrbrmstr/sergeant")
-```
-
 ### Flexdashboards 
 * [Flexdashboards](http://rmarkdown.rstudio.com/flexdashboard/) - Easy, interactive dashboards for R:
+
+Install the flexdashboard package in from CRAN as follows:
+
+`install.packages("flexdashboard")`
+
+### Other Packages 
+(Included in setup section of R Markdown)
+
+`DT`,`shiny`,`dplyr`,`leaflet`,`leaflet.extras`,`highcharter`,`stringr`,`data.table`, `sp`
 
 
 ## Authors
