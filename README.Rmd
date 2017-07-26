@@ -3,32 +3,50 @@
 
 ## Getting Started
 
-These instructions will get you a copy of this dashboard up and running on your local machine for development and testing purposes. 
+These instructions allow you to replicate our dashboard on your own local machine for development and testing purposes. The initial set-up requires that you run the install Apache Drill in embedded mode.
 
-### Prerequisites
+It's strongly recommend to check out [this link](https://drill.apache.org/docs/drill-in-10-minutes/) to get drill properly installed & running.  
 
+Apache Drill Embedded Mode Prerequisites:
+* Linux, Mac OS X, and Windows: Oracle JDK version 7 or version 8 if running Drill 1.6 or later [more](https://drill.apache.org/docs/drill-in-10-minutes/)
+
+Install Drill on Linux or MAC OS X
+
+Complete the following steps to install Drill:
+
+In a terminal window, change to the directory where you want to install Drill.
+
+Download the latest version of Apache Drill [here](http://apache.mirrors.hoobly.com/drill/drill-1.10.0/apache-drill-1.10.0.tar.gz) or from the [Apache Drill mirror](http://www.apache.org/dyn/closer.cgi/drill/drill-1.10.0/apache-drill-1.10.0.tar.gz) site with the command appropriate for your system:
+```{r}
+wget 'http://apache.mirrors.hoobly.com/drill/drill-1.10.0/apache-drill-1.10.0.tar.gz'
+
+curl -o apache-drill-1.10.0.tar.gz 'http://apache.mirrors.hoobly.com/drill/drill-1.10.0/apache-drill-1.10.0.tar.gz'
 ```
-sergeant 
 
-```
+Copy the downloaded file to the directory where you want to install Drill.
+Extract the contents of the Drill .tar.gz file. Use sudo if necessary:
 
-### Installing
 
-A step by step series of examples that tell you have to get a development env running
-
-Say what the step will be
-
-```
-Give the example
+```{r}
+tar -xvzf <.tar.gz file name>
 ```
 
 
-## Built With
+### Other Prerequisites
 
 * [RStudio](http://www.dropwizard.io/1.0.2/docs/) - IDE for R
 * [Flexdashboards](https://maven.apache.org/) - Easy, flexible dashboards using the Shiny apps framework
 * [Apache Drill](https://rometools.github.io/rome/) - Used to connect R with a variety of backend NoSQL database
 * [Sergeant]() - Tools to Transform and Query Data with Apache 'Drill'
+
+### Installation(s)
+
+```{r}
+
+```
+
+
+
 
 ## Authors
 
